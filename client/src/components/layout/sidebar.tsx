@@ -30,7 +30,7 @@ const sidebarSections: SidebarSection[] = [
       {
         icon: <Users className="h-4 w-4" />,
         label: "Gerenciar Clientes",
-        href: "/clients",
+        href: "/client",
       },
       {
         icon: <UserPlus className="h-4 w-4" />,
@@ -78,9 +78,9 @@ export default function Sidebar() {
               
               return (
                 <Link key={link.href} href={link.href}>
-                  <a
+                  <div
                     className={cn(
-                      "flex items-center px-4 py-3 text-sm transition-colors duration-200",
+                      "flex items-center px-4 py-3 text-sm transition-colors duration-200 cursor-pointer",
                       isActive
                         ? "bg-gray-800 text-white"
                         : "text-gray-300 hover:bg-gray-800"
@@ -88,7 +88,7 @@ export default function Sidebar() {
                   >
                     <span className="mr-2">{link.icon}</span>
                     {link.label}
-                  </a>
+                  </div>
                 </Link>
               );
             })}

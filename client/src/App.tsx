@@ -11,7 +11,7 @@ function App() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/clients" component={ClientList} />
+        <Route path="/client" component={ClientList} />
         <Route path="/client/:id" component={ClientDashboard} />
         <Route path="/checkpoints/:clientId" component={ClientCheckpoints} />
         <Route component={NotFound} />
