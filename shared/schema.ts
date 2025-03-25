@@ -9,6 +9,9 @@ export const clients = pgTable("clients", {
   documentId: text("document_id").notNull().unique(), // CPF or CNPJ
   documentType: text("document_type").notNull().default("CPF"), // CPF or CNPJ
   notes: text("notes"),
+  // Novos campos para plano de investimentos
+  emergencyReserveTarget: doublePrecision("emergency_reserve_target").notNull().default(0),
+  investmentPlan: json("investment_plan").notNull().default({}), // Distribuição percentual por categoria
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -30,11 +33,16 @@ export const investmentSubclasses = {
   "Outros": ["Criptomoedas", "Commodities", "Outros"],
 } as const;
 
+// Investment types
+export const investmentTypes = ["emergency", "investment"] as const;
+export type InvestmentType = typeof investmentTypes[number];
+
 // Investment model
 export const investments = pgTable("investments", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  type: text("type").notNull().default("investment"), // emergency or investment
   class: text("class").notNull(), // From investmentClasses
   subclass: text("subclass").notNull(), // From investmentSubclasses
   quantity: doublePrecision("quantity").notNull(),
@@ -48,14 +56,17 @@ export const investments = pgTable("investments", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Performance tracking model (optional - for historical performance)
+// Performance tracking model (for historical performance)
 export const performanceHistory = pgTable("performance_history", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   date: timestamp("date").notNull(),
   totalValue: doublePrecision("total_value").notNull(),
+  name: text("name"), // Opcional - Nome para o checkpoint
+  description: text("description"), // Opcional - Descrição para o checkpoint
   // JSON object with investment class totals
   breakdown: json("breakdown").notNull(),
+  investmentsSnapshot: json("investments_snapshot").notNull(), // Snapshot completo dos investimentos
 });
 
 // Validation schemas

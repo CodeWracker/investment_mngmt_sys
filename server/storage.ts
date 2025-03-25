@@ -28,7 +28,10 @@ export interface IStorage {
   
   // Performance history operations
   getPerformanceHistory(clientId: number): Promise<PerformanceHistory[]>;
+  getPerformanceRecord(id: number): Promise<PerformanceHistory | undefined>;
   createPerformanceRecord(record: InsertPerformanceHistory): Promise<PerformanceHistory>;
+  updatePerformanceRecord(id: number, record: Partial<InsertPerformanceHistory>): Promise<PerformanceHistory | undefined>;
+  deletePerformanceRecord(id: number): Promise<boolean>;
 }
 
 // In-memory implementation
@@ -169,6 +172,10 @@ export class MemStorage implements IStorage {
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
+  async getPerformanceRecord(id: number): Promise<PerformanceHistory | undefined> {
+    return this.performanceHistory.get(id);
+  }
+
   async createPerformanceRecord(record: InsertPerformanceHistory): Promise<PerformanceHistory> {
     const id = this.performanceIdCounter++;
     const newRecord: PerformanceHistory = {
@@ -177,6 +184,23 @@ export class MemStorage implements IStorage {
     };
     this.performanceHistory.set(id, newRecord);
     return newRecord;
+  }
+
+  async updatePerformanceRecord(id: number, updates: Partial<InsertPerformanceHistory>): Promise<PerformanceHistory | undefined> {
+    const record = this.performanceHistory.get(id);
+    if (!record) return undefined;
+
+    const updatedRecord: PerformanceHistory = {
+      ...record,
+      ...updates,
+      id,
+    };
+    this.performanceHistory.set(id, updatedRecord);
+    return updatedRecord;
+  }
+
+  async deletePerformanceRecord(id: number): Promise<boolean> {
+    return this.performanceHistory.delete(id);
   }
 
   // Helper function to create initial demo data
@@ -287,4 +311,159 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database implementation 
+import { db } from './db';
+import { eq, and, desc } from 'drizzle-orm';
+
+export class DatabaseStorage implements IStorage {
+  // Client operations
+  async getClients(): Promise<Client[]> {
+    return await db.select().from(clients);
+  }
+
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async createClient(client: InsertClient): Promise<Client> {
+    const [newClient] = await db.insert(clients).values(client).returning();
+    return newClient;
+  }
+
+  async updateClient(id: number, updates: Partial<InsertClient>): Promise<Client | undefined> {
+    const [updatedClient] = await db
+      .update(clients)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(clients.id, id))
+      .returning();
+    return updatedClient;
+  }
+
+  async deleteClient(id: number): Promise<boolean> {
+    // Cascade delete should handle investments and performance history
+    const deleted = await db.delete(clients).where(eq(clients.id, id)).returning();
+    return deleted.length > 0;
+  }
+
+  // Investment operations
+  async getInvestmentsByClient(clientId: number): Promise<Investment[]> {
+    return await db
+      .select()
+      .from(investments)
+      .where(eq(investments.clientId, clientId));
+  }
+
+  async getInvestment(id: number): Promise<Investment | undefined> {
+    const [investment] = await db
+      .select()
+      .from(investments)
+      .where(eq(investments.id, id));
+    return investment;
+  }
+
+  async createInvestment(investment: InsertInvestment): Promise<Investment> {
+    const [newInvestment] = await db
+      .insert(investments)
+      .values({
+        ...investment,
+        performance: 0,
+        previousValue: 0
+      })
+      .returning();
+    return newInvestment;
+  }
+
+  async updateInvestment(id: number, updates: Partial<InsertInvestment>): Promise<Investment | undefined> {
+    // Get current investment to calculate performance
+    const [currentInvestment] = await db
+      .select()
+      .from(investments)
+      .where(eq(investments.id, id));
+    
+    if (!currentInvestment) return undefined;
+
+    // Calculate previous value
+    const previousValue = currentInvestment.quantity * currentInvestment.unitPrice;
+    
+    // Prepare updates
+    const updateData: any = {
+      ...updates,
+      previousValue,
+      updatedAt: new Date()
+    };
+    
+    // Calculate performance if price or quantity changed
+    if (updates.quantity !== undefined || updates.unitPrice !== undefined) {
+      const newQuantity = updates.quantity ?? currentInvestment.quantity;
+      const newUnitPrice = updates.unitPrice ?? currentInvestment.unitPrice;
+      const newValue = newQuantity * newUnitPrice;
+      
+      if (previousValue > 0) {
+        updateData.performance = ((newValue - previousValue) / previousValue) * 100;
+      }
+    }
+    
+    // Update the investment
+    const [updatedInvestment] = await db
+      .update(investments)
+      .set(updateData)
+      .where(eq(investments.id, id))
+      .returning();
+      
+    return updatedInvestment;
+  }
+
+  async deleteInvestment(id: number): Promise<boolean> {
+    const deleted = await db
+      .delete(investments)
+      .where(eq(investments.id, id))
+      .returning();
+    return deleted.length > 0;
+  }
+
+  // Performance history operations
+  async getPerformanceHistory(clientId: number): Promise<PerformanceHistory[]> {
+    return await db
+      .select()
+      .from(performanceHistory)
+      .where(eq(performanceHistory.clientId, clientId))
+      .orderBy(performanceHistory.date);
+  }
+
+  async getPerformanceRecord(id: number): Promise<PerformanceHistory | undefined> {
+    const [record] = await db
+      .select()
+      .from(performanceHistory)
+      .where(eq(performanceHistory.id, id));
+    return record;
+  }
+
+  async createPerformanceRecord(record: InsertPerformanceHistory): Promise<PerformanceHistory> {
+    const [newRecord] = await db
+      .insert(performanceHistory)
+      .values(record)
+      .returning();
+    return newRecord;
+  }
+
+  async updatePerformanceRecord(id: number, updates: Partial<InsertPerformanceHistory>): Promise<PerformanceHistory | undefined> {
+    const [updatedRecord] = await db
+      .update(performanceHistory)
+      .set(updates)
+      .where(eq(performanceHistory.id, id))
+      .returning();
+    return updatedRecord;
+  }
+
+  async deletePerformanceRecord(id: number): Promise<boolean> {
+    const deleted = await db
+      .delete(performanceHistory)
+      .where(eq(performanceHistory.id, id))
+      .returning();
+    return deleted.length > 0;
+  }
+}
+
+// Use database storage
+export const storage = new DatabaseStorage();
