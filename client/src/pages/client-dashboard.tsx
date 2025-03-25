@@ -149,11 +149,11 @@ export default function ClientDashboard() {
       const breakdown = calculateTotalsByClass();
       
       // Create performance history record based on our schema
-      const snapshotData: InsertPerformanceHistory = {
+      const snapshotData = {
         clientId,
-        date: new Date(),
+        date: new Date().toISOString(), // Convert to ISO string for JSON
         totalValue,
-        breakdown
+        breakdown: JSON.stringify(breakdown) // Convert to JSON string as required
       };
       
       const res = await apiRequest("POST", "/api/performance-history", snapshotData);
