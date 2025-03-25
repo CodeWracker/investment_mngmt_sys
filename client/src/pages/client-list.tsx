@@ -121,7 +121,7 @@ export default function ClientList() {
     if (params.get("new") === "true") {
       setShowForm(true);
       // Clear the URL parameter
-      navigate("/clients", { replace: true });
+      navigate("/client", { replace: true });
     }
   }, [search, navigate]);
 
@@ -209,7 +209,7 @@ export default function ClientList() {
                     <TableRow key={client.id} className="cursor-pointer hover:bg-gray-50">
                       <TableCell 
                         className="font-medium" 
-                        onClick={() => navigate(`/clients/${client.id}`)}
+                        onClick={() => navigate(`/client/${client.id}`)}
                       >
                         <div className="flex items-center">
                           <div className="mr-2 bg-blue-100 text-blue-800 p-1 rounded-full">
@@ -222,12 +222,12 @@ export default function ClientList() {
                           {client.name}
                         </div>
                       </TableCell>
-                      <TableCell onClick={() => navigate(`/clients/${client.id}`)}>
+                      <TableCell onClick={() => navigate(`/client/${client.id}`)}>
                         {client.documentId}
                       </TableCell>
                       <TableCell 
                         className="text-right font-mono"
-                        onClick={() => navigate(`/clients/${client.id}`)}
+                        onClick={() => navigate(`/client/${client.id}`)}
                       >
                         {/* In a real app, we would calculate this from investments */}
                         {client.name === "Pedro Sousa" 
@@ -238,7 +238,7 @@ export default function ClientList() {
                       </TableCell>
                       <TableCell 
                         className="text-right"
-                        onClick={() => navigate(`/clients/${client.id}`)}
+                        onClick={() => navigate(`/client/${client.id}`)}
                       >
                         {new Date(client.updatedAt).toLocaleDateString("pt-BR")}
                       </TableCell>
