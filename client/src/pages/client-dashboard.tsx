@@ -5,7 +5,8 @@ import {
   Client, 
   Investment,
   PerformanceHistory,
-  insertInvestmentSchema 
+  insertInvestmentSchema,
+  insertPerformanceHistorySchema
 } from "@shared/schema";
 import { 
   User, 
@@ -13,7 +14,9 @@ import {
   Printer, 
   FileDown, 
   Plus, 
-  AlertCircle 
+  AlertCircle,
+  Calendar,
+  SaveIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -133,6 +136,44 @@ export default function ClientDashboard() {
       });
     }
   });
+  
+  // Create portfolio snapshot mutation
+  const createSnapshotMutation = useMutation({
+    mutationFn: async () => {
+      if (!investments || investments.length === 0) {
+        throw new Error("Não há investimentos para criar um snapshot");
+      }
+      
+      // Calculate total value and breakdown by class
+      const totalValue = calculateTotalValue();
+      const breakdown = calculateTotalsByClass();
+      
+      // Create performance history record
+      const snapshotData = {
+        clientId,
+        date: new Date(),
+        totalValue,
+        breakdown
+      };
+      
+      const res = await apiRequest("POST", "/api/performance-history", snapshotData);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/performance`] });
+      toast({
+        title: "Checkpoint criado",
+        description: "Checkpoint do portfólio criado com sucesso. Estes dados serão usados para monitorar a evolução do patrimônio.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao criar checkpoint: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
 
   const handleCreateInvestment = (data: any) => {
     createInvestmentMutation.mutate(data);
@@ -218,7 +259,7 @@ export default function ClientDashboard() {
             </>
           ) : null}
         </div>
-        <div className="mt-4 md:mt-0 flex space-x-2">
+        <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
           <Button variant="outline" className="flex items-center">
             <Printer className="h-4 w-4 mr-1" />
             Imprimir
@@ -226,6 +267,15 @@ export default function ClientDashboard() {
           <Button variant="outline" className="flex items-center">
             <FileDown className="h-4 w-4 mr-1" />
             Exportar
+          </Button>
+          <Button 
+            onClick={() => createSnapshotMutation.mutate()}
+            variant="secondary"
+            className="flex items-center"
+            disabled={createSnapshotMutation.isPending || !investments || investments.length === 0}
+          >
+            <SaveIcon className="h-4 w-4 mr-1" />
+            {createSnapshotMutation.isPending ? "Criando..." : "Criar Checkpoint"}
           </Button>
           <Button 
             onClick={() => {

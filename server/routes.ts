@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertInvestmentSchema } from "@shared/schema";
+import { insertClientSchema, insertInvestmentSchema, insertPerformanceHistorySchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -221,6 +221,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(performanceHistory);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch performance history" });
+    }
+  });
+  
+  // Create performance checkpoint (snapshot)
+  app.post("/api/performance-history", async (req, res) => {
+    try {
+      const performanceData = insertPerformanceHistorySchema.parse(req.body);
+      
+      // Verify client exists
+      const client = await storage.getClient(performanceData.clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+
+      const performanceRecord = await storage.createPerformanceRecord(performanceData);
+      res.status(201).json(performanceRecord);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ message: validationError.message });
+      } else {
+        res.status(500).json({ message: "Failed to create performance checkpoint" });
+      }
     }
   });
 
