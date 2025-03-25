@@ -63,10 +63,7 @@ export default function ClientCheckpoints() {
   const editCheckpointMutation = useMutation({
     mutationFn: async (data: Partial<PerformanceHistory>) => {
       if (!editingCheckpoint) return null;
-      return apiRequest(`/api/performance-history/${editingCheckpoint.id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PUT", `/api/performance-history/${editingCheckpoint.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/performance`] });
@@ -87,9 +84,7 @@ export default function ClientCheckpoints() {
 
   const deleteCheckpointMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/performance-history/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/performance-history/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/performance`] });

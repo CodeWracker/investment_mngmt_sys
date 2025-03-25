@@ -280,6 +280,14 @@ export default function ClientDashboard() {
             {createSnapshotMutation.isPending ? "Criando..." : "Criar Checkpoint"}
           </Button>
           <Button 
+            onClick={() => navigate(`/checkpoints/${clientId}`)}
+            variant="outline"
+            className="flex items-center"
+          >
+            <History className="h-4 w-4 mr-1" />
+            Histórico de Checkpoints
+          </Button>
+          <Button 
             onClick={() => {
               setEditInvestment(null);
               setShowInvestmentForm(true);
