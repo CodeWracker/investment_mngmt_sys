@@ -3,6 +3,7 @@ import Layout from "./components/layout/layout";
 import Dashboard from "./pages/dashboard";
 import ClientList from "./pages/client-list";
 import ClientDashboard from "./pages/client-dashboard";
+import ClientCheckpoints from "./pages/client-checkpoints";
 import NotFound from "./pages/not-found";
 
 function App() {
@@ -11,7 +12,8 @@ function App() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/clients" component={ClientList} />
-        <Route path="/clients/:id" component={ClientDashboard} />
+        <Route path="/client/:id" component={ClientDashboard} />
+        <Route path="/checkpoints/:clientId" component={ClientCheckpoints} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
