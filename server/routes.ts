@@ -224,11 +224,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get a specific performance record
+  app.get("/api/performance-history/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid record ID" });
+      }
+
+      const record = await storage.getPerformanceRecord(id);
+      if (!record) {
+        return res.status(404).json({ message: "Performance record not found" });
+      }
+
+      res.json(record);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch performance record" });
+    }
+  });
+  
   // Create performance checkpoint (snapshot)
   app.post("/api/performance-history", async (req, res) => {
     try {
       // Get the raw data from the request
-      const { clientId, date, totalValue, breakdown } = req.body;
+      const { clientId, date, totalValue, breakdown, name, description } = req.body;
       
       // Verify client exists
       const client = await storage.getClient(Number(clientId));
@@ -236,12 +255,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Client not found" });
       }
 
+      // Get current investments to create a snapshot
+      const investments = await storage.getInvestmentsByClient(Number(clientId));
+
       // Create a properly formatted record
       const performanceData = {
         clientId: Number(clientId),
         date: new Date(date),
         totalValue: Number(totalValue),
-        breakdown: typeof breakdown === 'string' ? JSON.parse(breakdown) : breakdown
+        name: name || `Checkpoint ${new Date(date).toLocaleDateString()}`,
+        description: description || "",
+        breakdown: typeof breakdown === 'string' ? JSON.parse(breakdown) : breakdown,
+        investmentsSnapshot: investments
       };
 
       const performanceRecord = await storage.createPerformanceRecord(performanceData);
@@ -257,6 +282,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: error.message 
         });
       }
+    }
+  });
+  
+  // Update an existing performance checkpoint
+  app.put("/api/performance-history/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid record ID" });
+      }
+
+      // Get current record
+      const currentRecord = await storage.getPerformanceRecord(id);
+      if (!currentRecord) {
+        return res.status(404).json({ message: "Performance record not found" });
+      }
+
+      // Update the record
+      const updates = req.body;
+      const updatedRecord = await storage.updatePerformanceRecord(id, updates);
+      
+      res.json(updatedRecord);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ message: validationError.message });
+      } else {
+        res.status(500).json({ message: "Failed to update performance record" });
+      }
+    }
+  });
+  
+  // Delete a performance checkpoint
+  app.delete("/api/performance-history/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid record ID" });
+      }
+
+      const success = await storage.deletePerformanceRecord(id);
+      if (!success) {
+        return res.status(404).json({ message: "Performance record not found" });
+      }
+
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete performance record" });
     }
   });
 
