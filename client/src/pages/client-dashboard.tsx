@@ -148,8 +148,8 @@ export default function ClientDashboard() {
       const totalValue = calculateTotalValue();
       const breakdown = calculateTotalsByClass();
       
-      // Create performance history record
-      const snapshotData = {
+      // Create performance history record based on our schema
+      const snapshotData: InsertPerformanceHistory = {
         clientId,
         date: new Date(),
         totalValue,
