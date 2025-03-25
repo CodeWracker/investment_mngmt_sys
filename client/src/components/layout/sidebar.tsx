@@ -35,7 +35,7 @@ const sidebarSections: SidebarSection[] = [
       {
         icon: <UserPlus className="h-4 w-4" />,
         label: "Adicionar Cliente",
-        href: "/clients?new=true",
+        href: "/client?new=true",
       },
     ],
   },
