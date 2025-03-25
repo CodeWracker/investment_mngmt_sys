@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { 
   Client, 
   Investment,
@@ -16,7 +16,8 @@ import {
   Plus, 
   AlertCircle,
   Calendar,
-  SaveIcon
+  SaveIcon,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,6 +34,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export default function ClientDashboard() {
   const { id } = useParams();
   const clientId = parseInt(id);
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
   const [editInvestment, setEditInvestment] = useState<Investment | null>(null);
