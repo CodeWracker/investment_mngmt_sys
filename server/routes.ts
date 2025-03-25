@@ -227,22 +227,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create performance checkpoint (snapshot)
   app.post("/api/performance-history", async (req, res) => {
     try {
-      const performanceData = insertPerformanceHistorySchema.parse(req.body);
+      // Get the raw data from the request
+      const { clientId, date, totalValue, breakdown } = req.body;
       
       // Verify client exists
-      const client = await storage.getClient(performanceData.clientId);
+      const client = await storage.getClient(Number(clientId));
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
 
+      // Create a properly formatted record
+      const performanceData = {
+        clientId: Number(clientId),
+        date: new Date(date),
+        totalValue: Number(totalValue),
+        breakdown: typeof breakdown === 'string' ? JSON.parse(breakdown) : breakdown
+      };
+
       const performanceRecord = await storage.createPerformanceRecord(performanceData);
       res.status(201).json(performanceRecord);
     } catch (error) {
+      console.error("Error creating performance history:", error);
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
         res.status(400).json({ message: validationError.message });
       } else {
-        res.status(500).json({ message: "Failed to create performance checkpoint" });
+        res.status(500).json({ 
+          message: "Failed to create performance checkpoint", 
+          error: error.message 
+        });
       }
     }
   });
