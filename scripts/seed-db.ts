@@ -168,7 +168,8 @@ seed()
     console.error("Error seeding database:", e);
     process.exit(1);
   })
-  .finally(async () => {
-    await db.end();
+  .finally(() => {
+    // O objeto db do Drizzle não tem método end(), isso é específico do pool
+    // Finalizamos o script simplesmente saindo com sucesso
     process.exit(0);
   });
