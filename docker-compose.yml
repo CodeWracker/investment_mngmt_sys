@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  web:
+    build: . # Usa o Dockerfile no diretório atual para construir a imagem
+    ports:
+      - "3001:5000" # Mapeia a porta 3000 do container para a porta 3000 da sua máquina
+    environment:
+      DATABASE_URL: ${DATABASE_URL} # Pega do seu ambiente do sistema
+      SESSION_SECRET: ${SESSION_SECRET} # Pega do seu ambiente do sistema
+      PGDATABASE: ${PGDATABASE} # Pega do seu ambiente do sistema
+      PGHOST: ${PGHOST} # Pega do seu ambiente do sistema
+      PGPORT: ${PGPORT} # Pega do seu ambiente do sistema
+      PGUSER: ${PGUSER} # Pega do seu ambiente do sistema
+      PGPASSWORD: ${PGPASSWORD} # Pega do seu ambiente do sistema
+      API_URL: ${API_URL} # Pega do seu ambiente do sistema
+      # Adicione outras variáveis de ambiente aqui, se necessário
+      # VARIAVEL_EXEMPLO: valor_exemplo
+    volumes:
+      - .:/app # Monta o diretório do projeto dentro do container para desenvolvimento (hot-reloading)
+      - /app/node_modules # Evita problemas com módulos node_modules no host vs container 
