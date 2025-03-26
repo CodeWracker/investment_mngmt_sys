@@ -1,0 +1,160 @@
+// Tabela de Clientes
+Table cliente {
+  id_cliente int [pk, increment]
+  nome varchar
+  cpf varchar [note: "Pode ser NULL, mas pelo menos um entre CPF e CNPJ deve existir"]
+  cnpj varchar [note: "Pode ser NULL, mas pelo menos um entre CPF e CNPJ deve existir"]
+  observacoes text
+}
+
+// Tabela de Corretoras
+Table corretora {
+  id_corretora int [pk, increment]
+  nome_corretora varchar
+}
+
+// Tabela de Carteiras
+Table carteira {
+  id_carteira int [pk, increment]
+  nome_carteira varchar
+  fk_id_cliente int [ref: > cliente.id_cliente]
+}
+
+// Tabela de Classes
+Table classe {
+  id_classe int [pk, increment]
+  nome_classe varchar
+}
+
+// Tabela de Subclasses
+Table subclasse {
+  id_subclasse int [pk, increment]
+  nome_subclasse varchar
+}
+
+// Tabela de Tipos de Evento
+Table evento_tipo {
+  id_evento_tipo int [pk, increment]
+  nome_evento_tipo varchar
+  descricao text
+}
+
+// Tabela de Itens
+Table item {
+  id_item int [pk, increment]
+  nome_item varchar
+  codigo_item varchar [note: "Pode ser NULL"]
+  fk_id_classe int [ref: > classe.id_classe]
+  fk_id_subclasse int [ref: > subclasse.id_subclasse]
+  auto_updateable boolean
+  auto_update_source text [note: "Fonte do dado, ex: Google Finance, API route..."]
+}
+
+// Tabela que liga itens às carteiras
+Table carteira_item {
+  id_carteira_item int [pk, increment]
+  fk_id_carteira int [ref: > carteira.id_carteira]
+  fk_id_item int [ref: > item.id_item]
+  quantidade decimal
+  fk_id_corretora int [ref: > corretora.id_corretora]
+}
+
+// Tabela de plano de carteira por classe
+Table plano_carteira_classe {
+  id_plano_classe int [pk, increment]
+  fk_id_carteira int [ref: > carteira.id_carteira]
+  fk_id_classe int [ref: > classe.id_classe]
+  percentual decimal
+}
+
+// Tabela de plano de carteira por subclasse
+Table plano_carteira_subclasse {
+  id_plano_subclasse int [pk, increment]
+  fk_id_carteira int [ref: > carteira.id_carteira]
+  fk_id_subclasse int [ref: > subclasse.id_subclasse]
+  percentual decimal
+}
+
+// Snapshots (estado da carteira em um momento do tempo)
+Table snapshot {
+  id_snapshot int [pk, increment]
+  data_snapshot date
+  fk_id_carteira int [ref: > carteira.id_carteira]
+}
+
+// Snapshot de Itens
+Table snapshot_item {
+  id_snapshot_item int [pk, increment]
+  fk_id_snapshot int [ref: > snapshot.id_snapshot]
+  fk_id_item int [ref: > item.id_item]
+  quantidade decimal
+}
+
+// Snapshot dos planos por classe
+Table snapshot_plano_classe {
+  id_snapshot_plano_classe int [pk, increment]
+  fk_id_snapshot int [ref: > snapshot.id_snapshot]
+  fk_id_classe int [ref: > classe.id_classe]
+  percentual decimal
+}
+
+// Snapshot dos planos por subclasse
+Table snapshot_plano_subclasse {
+  id_snapshot_plano_subclasse int [pk, increment]
+  fk_id_snapshot int [ref: > snapshot.id_snapshot]
+  fk_id_subclasse int [ref: > subclasse.id_subclasse]
+  percentual decimal
+}
+
+/* -----------------------------------------------------------
+   Tabelas para Eventos, Transferências e Saldos
+-------------------------------------------------------------*/
+
+// Tabela de Eventos na Carteira
+// Eventos são propriedades de items e, quando acionados, podem alterar o saldo da corretora.
+Table evento {
+  id_evento int [pk, increment]
+  fk_id_carteira int [ref: > carteira.id_carteira]
+  data_evento datetime
+  valor decimal
+  fk_id_corretora int [ref: > corretora.id_corretora, note: "Pode ser NULL se o evento não estiver vinculado a uma corretora"]
+  descricao text
+  fk_id_item int [ref: > item.id_item]
+  fk_id_evento_tipo int [ref: > evento_tipo.id_evento_tipo]
+}
+
+// Tabela de Transferências
+// Registra a transferência de saldo do cliente para a corretora (ou vice-versa).
+Table transferencia {
+  id_transferencia int [pk, increment]
+  fk_id_cliente int [ref: > cliente.id_cliente]
+  fk_id_corretora int [ref: > corretora.id_corretora]
+  valor decimal
+  data_transferencia datetime
+  descricao text
+  is_aporte bool
+}
+
+// Extrato da Corretora
+// Registra entradas de saldo, que podem ser originadas de um evento ou de uma transferência.
+Table extrato_corretora {
+  id_extrato_corretora int [pk, increment]
+  fk_id_carteira int [ref: > carteira.id_carteira]
+  fk_id_corretora int [ref: > corretora.id_corretora]
+  qtd decimal
+  // Referência ao evento que gerou esta entrada (opcional)
+  fk_id_evento int [ref: > evento.id_evento, note: "Pode ser NULL para transferências"]
+  // Referência à transferência que gerou esta entrada (opcional)
+  fk_id_transferencia int [ref: > transferencia.id_transferencia, note: "Pode ser NULL se não for transferência"]
+}
+
+// Extrato do Cliente
+// Registra saídas de saldo do cliente decorrentes de transferências.
+Table extrato_cliente {
+  id_extrato_cliente int [pk, increment]
+  fk_id_cliente int [ref: > cliente.id_cliente]
+  qtd decimal
+  // Referência à transferência que gerou esta saída (opcional)
+  fk_id_transferencia int [ref: > transferencia.id_transferencia, note: "Pode ser NULL se não for transferência"]
+}
+

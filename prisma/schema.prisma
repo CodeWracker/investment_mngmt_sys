@@ -1,0 +1,31 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Cliente {
+  id_cliente  Int       @id @default(autoincrement())
+  nome        String
+  cpf         String?   // Pode ser NULL
+  cnpj        String?   // Pode ser NULL (pelo menos um deve existir)
+  observacoes String?
+  carteiras   Carteira[]
+}
+
+model Carteira {
+  id_carteira   Int     @id @default(autoincrement())
+  nome_carteira String
+  fk_id_cliente Int
+  cliente       Cliente @relation(fields: [fk_id_cliente], references: [id_cliente])
+}
+
+model Item {
+  id_item     Int     @id @default(autoincrement())
+  nome_item   String
+  codigo_item String? // Opcional
+  // Para o MVP, não incluímos as relações com classe e subclasse
+}
